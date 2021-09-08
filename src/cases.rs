@@ -1,15 +1,13 @@
 use regex::Regex;
 
-pub struct TestCases {
-
-}
+pub struct TestCases {}
 
 #[derive(Debug, PartialEq)]
 pub enum TestOutcome {
     Unknown,
     Passed,
     Failed,
-    Ignored
+    Ignored,
 }
 
 impl TestOutcome {
@@ -26,14 +24,14 @@ impl TestOutcome {
 #[derive(Debug)]
 pub struct TestCase {
     pub id: String,
-    pub outcome: TestOutcome
+    pub outcome: TestOutcome,
 }
 
 #[derive(Debug)]
 pub enum TestOutputType {
     Unknown,
     Stdout,
-    Stderr
+    Stderr,
 }
 
 impl TestOutputType {
@@ -57,17 +55,16 @@ impl TestOutputType {
 #[derive(Debug)]
 pub struct TestOutput {
     pub r#type: TestOutputType,
-    pub data: String
+    pub data: String,
 }
 
 #[derive(Debug)]
 pub struct TestFailure {
     pub id: String,
-    pub outputs: Vec<TestOutput>
+    pub outputs: Vec<TestOutput>,
 }
 
-pub struct TestFailures {
-}
+pub struct TestFailures {}
 
 impl TestCases {
     pub fn from(test_output: &Vec<&str>) -> Vec<TestCase> {
@@ -81,10 +78,10 @@ impl TestCases {
                     if id != "result:" {
                         test_cases.push(TestCase {
                             id: id.into(),
-                            outcome: TestOutcome::from(captures.get(2).unwrap().as_str())
+                            outcome: TestOutcome::from(captures.get(2).unwrap().as_str()),
                         });
                     }
-                },
+                }
                 None => {}
             };
         }
@@ -109,7 +106,7 @@ impl TestFailures {
 
                     let mut failure = TestFailure {
                         id: id.into(),
-                        outputs: Vec::new()
+                        outputs: Vec::new(),
                     };
 
                     loop {
@@ -124,10 +121,10 @@ impl TestFailures {
                                 } else {
                                     output.push(line.clone())
                                 }
-                            },
+                            }
                             None => {
                                 break;
-                            },
+                            }
                         }
                     }
 
@@ -147,22 +144,22 @@ impl TestFailures {
                                                     data: output.join("\n"),
                                                 });
                                                 break;
-                                            },
+                                            }
                                             None => {
                                                 break;
-                                            },
+                                            }
                                         }
                                     } else {
                                         output.push(line.clone())
                                     }
-                                },
+                                }
                                 None => {
                                     break;
-                                },
+                                }
                             }
                         }
                     }
-                },
+                }
             }
         }
 
@@ -178,7 +175,7 @@ mod tests {
             "test module::passed ... ok",
             "test module::failed ... FAILED",
             "test src/lib.rs - Struct::passed (line 20) ... ok",
-            "test src/lib.rs - Struct::failed (line 50) ... FAILED"
+            "test src/lib.rs - Struct::failed (line 50) ... FAILED",
         ];
 
         let cases = super::TestCases::from(&test_data);

@@ -1,7 +1,7 @@
 [package]
 name = "cargo-junit-test"
 authors = ["cemoktra <b.schubert82@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 description = "Converting cargo test output to junit xml"
 readme = "README.md"
@@ -14,4 +14,5 @@ license = "GPL-2.0"
 
 [dependencies]
 regex = "1.5"
+structopt = "0.3"
 xml-rs = "0.8"
