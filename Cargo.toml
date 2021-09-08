@@ -1,0 +1,17 @@
+[package]
+name = "cargo-junit-test"
+authors = ["cemoktra <b.schubert82@gmail.com>"]
+version = "0.1.0"
+edition = "2018"
+description = "Converting cargo test output to junit xml"
+readme = "README.md"
+homepage = "https://github.com/cemoktra/cargo-junit-test"
+repository = "https://github.com/cemoktra/cargo-junit-test"
+keywords = ["test", "junit"]
+license = "GPL-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+regex = "1.5"
+xml-rs = "0.8"
