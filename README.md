@@ -1,11 +1,11 @@
 # cargo-junit-test #
 ## Install ##
 ```
-cargo install cargo-junit-test
+cargo install junit-test
 ```
 
 ## Usage ##
 ```
-cargo junit-test
+junit-test
 ```
 This will create a `junit.xml` file inside the folder where it was executed.
