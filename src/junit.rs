@@ -2,7 +2,7 @@ use crate::cases::{TestFailure, TestOutcome, TestSuite};
 use std::fs::File;
 use xml::writer::{EmitterConfig, XmlEvent};
 
-pub fn create_junit_file(suites: &Vec<TestSuite>, failures: &Vec<TestFailure>) {
+pub fn create_junit_file(suites: &[TestSuite], failures: &[TestFailure]) {
     let mut file = File::create("junit.xml").unwrap();
     let mut writer = EmitterConfig::new()
         .perform_indent(true)

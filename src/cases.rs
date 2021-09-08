@@ -81,57 +81,48 @@ pub struct TestSuite {
 pub struct TestFailures {}
 
 impl TestSuites {
-    pub fn from(test_output: &Vec<&str>) -> Vec<TestSuite> {
+    pub fn from(test_output: &[&str]) -> Vec<TestSuite> {
         let mut test_suites = Vec::new();
         let mut test_cases = Vec::new();
         let mut test_type = TestCaseType::UnitTest;
-        let re = Regex::new(r"test (.*) ... (.*)").unwrap();
+        let re_cases = Regex::new(r"test (.*) ... (.*)").unwrap();
         let re_doc_test = Regex::new(r"Doc-tests (.*)").unwrap();
         let re_duration = Regex::new(r"finished in (\d+\.\d+)").unwrap();
 
         for line in test_output {
-            match re_doc_test.captures(line) {
-                Some(captures) => {
-                    test_type = TestCaseType::DocTest(captures.get(1).unwrap().as_str().into())
-                }
-                None => {}
+            if let Some(captures) = re_doc_test.captures(line) {
+                test_type = TestCaseType::DocTest(captures.get(1).unwrap().as_str().into());
             }
 
-            match re.captures(line) {
-                Some(captures) => {
-                    let id = captures.get(1).unwrap().as_str();
-                    if id != "result:" {
-                        test_cases.push(TestCase {
-                            id: id.into(),
-                            outcome: TestOutcome::from(captures.get(2).unwrap().as_str()),
-                            r#type: test_type.clone(),
-                        });
-                    }
+            if let Some(captures) = re_cases.captures(line) {
+                let id = captures.get(1).unwrap().as_str();
+                if id != "result:" {
+                    test_cases.push(TestCase {
+                        id: id.into(),
+                        outcome: TestOutcome::from(captures.get(2).unwrap().as_str()),
+                        r#type: test_type.clone(),
+                    });
                 }
-                None => {}
             }
 
-            match re_duration.captures(line) {
-                Some(captures) => {
-                    if test_cases.len() > 0 {
-                        test_suites.push(TestSuite {
-                            id: match &test_type {
-                                TestCaseType::UnitTest => "UnitTests".into(),
-                                TestCaseType::DocTest(id) => format!("Doc-tests {}", id.clone()),
-                            },
-                            cases: test_cases,
-                            duration: captures
-                                .get(1)
-                                .unwrap()
-                                .as_str()
-                                .parse::<f64>()
-                                .ok()
-                                .unwrap_or(0.0),
-                        });
-                    }
-                    test_cases = Vec::new();
+            if let Some(captures) = re_duration.captures(line) {
+                if !test_cases.is_empty() {
+                    test_suites.push(TestSuite {
+                        id: match &test_type {
+                            TestCaseType::UnitTest => "UnitTests".into(),
+                            TestCaseType::DocTest(id) => format!("Doc-tests {}", id.clone()),
+                        },
+                        cases: test_cases,
+                        duration: captures
+                            .get(1)
+                            .unwrap()
+                            .as_str()
+                            .parse::<f64>()
+                            .ok()
+                            .unwrap_or(0.0),
+                    });
                 }
-                None => {}
+                test_cases = Vec::new();
             }
         }
 
@@ -140,7 +131,7 @@ impl TestSuites {
 }
 
 impl TestFailures {
-    pub fn from(test_output: &Vec<&str>) -> Vec<TestFailure> {
+    pub fn from(test_output: &[&str]) -> Vec<TestFailure> {
         let mut failures = Vec::new();
         // let mut failure = None;
         let re = Regex::new(r"---- (.*) (\S+) ----").unwrap();
@@ -158,22 +149,15 @@ impl TestFailures {
                         outputs: Vec::new(),
                     };
 
-                    loop {
-                        match lines.next() {
-                            Some(line) => {
-                                if line.is_empty() {
-                                    failure.outputs.push(TestOutput {
-                                        r#type: TestOutputType::from(r#type),
-                                        data: output.join("\n"),
-                                    });
-                                    break;
-                                } else {
-                                    output.push(line.clone())
-                                }
-                            }
-                            None => {
-                                break;
-                            }
+                    for line in &mut lines {
+                        if line.is_empty() {
+                            failure.outputs.push(TestOutput {
+                                r#type: TestOutputType::from(r#type),
+                                data: output.join("\n"),
+                            });
+                            break;
+                        } else {
+                            output.push(String::from(*line));
                         }
                     }
 
@@ -182,29 +166,22 @@ impl TestFailures {
                 None => {
                     if *line == "stderr:" {
                         let mut output = Vec::new();
-                        loop {
-                            match lines.next() {
-                                Some(line) => {
-                                    if line.is_empty() {
-                                        match failures.last_mut() {
-                                            Some(failure) => {
-                                                failure.outputs.push(TestOutput {
-                                                    r#type: TestOutputType::Stderr,
-                                                    data: output.join("\n"),
-                                                });
-                                                break;
-                                            }
-                                            None => {
-                                                break;
-                                            }
-                                        }
-                                    } else {
-                                        output.push(line.clone())
+                        for line in &mut lines {
+                            if line.is_empty() {
+                                match failures.last_mut() {
+                                    Some(failure) => {
+                                        failure.outputs.push(TestOutput {
+                                            r#type: TestOutputType::Stderr,
+                                            data: output.join("\n"),
+                                        });
+                                        break;
+                                    }
+                                    None => {
+                                        break;
                                     }
                                 }
-                                None => {
-                                    break;
-                                }
+                            } else {
+                                output.push(String::from(*line))
                             }
                         }
                     }
