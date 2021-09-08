@@ -1,6 +1,6 @@
 use regex::Regex;
 
-pub struct TestCases {}
+pub struct TestSuites {}
 
 #[derive(Debug, PartialEq)]
 pub enum TestOutcome {
@@ -21,10 +21,17 @@ impl TestOutcome {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum TestCaseType {
+    UnitTest,
+    DocTest(String),
+}
+
 #[derive(Debug)]
 pub struct TestCase {
     pub id: String,
     pub outcome: TestOutcome,
+    pub r#type: TestCaseType,
 }
 
 #[derive(Debug)]
@@ -64,14 +71,32 @@ pub struct TestFailure {
     pub outputs: Vec<TestOutput>,
 }
 
+#[derive(Debug)]
+pub struct TestSuite {
+    pub id: String,
+    pub cases: Vec<TestCase>,
+    pub duration: f64,
+}
+
 pub struct TestFailures {}
 
-impl TestCases {
-    pub fn from(test_output: &Vec<&str>) -> Vec<TestCase> {
+impl TestSuites {
+    pub fn from(test_output: &Vec<&str>) -> Vec<TestSuite> {
+        let mut test_suites = Vec::new();
         let mut test_cases = Vec::new();
+        let mut test_type = TestCaseType::UnitTest;
         let re = Regex::new(r"test (.*) ... (.*)").unwrap();
+        let re_doc_test = Regex::new(r"Doc-tests (.*)").unwrap();
+        let re_duration = Regex::new(r"finished in (\d+\.\d+)").unwrap();
 
         for line in test_output {
+            match re_doc_test.captures(line) {
+                Some(captures) => {
+                    test_type = TestCaseType::DocTest(captures.get(1).unwrap().as_str().into())
+                }
+                None => {}
+            }
+
             match re.captures(line) {
                 Some(captures) => {
                     let id = captures.get(1).unwrap().as_str();
@@ -79,14 +104,38 @@ impl TestCases {
                         test_cases.push(TestCase {
                             id: id.into(),
                             outcome: TestOutcome::from(captures.get(2).unwrap().as_str()),
+                            r#type: test_type.clone(),
                         });
                     }
                 }
                 None => {}
-            };
+            }
+
+            match re_duration.captures(line) {
+                Some(captures) => {
+                    if test_cases.len() > 0 {
+                        test_suites.push(TestSuite {
+                            id: match &test_type {
+                                TestCaseType::UnitTest => "UnitTests".into(),
+                                TestCaseType::DocTest(id) => format!("Doc-tests {}", id.clone()),
+                            },
+                            cases: test_cases,
+                            duration: captures
+                                .get(1)
+                                .unwrap()
+                                .as_str()
+                                .parse::<f64>()
+                                .ok()
+                                .unwrap_or(0.0),
+                        });
+                    }
+                    test_cases = Vec::new();
+                }
+                None => {}
+            }
         }
 
-        test_cases
+        test_suites
     }
 }
 
@@ -174,13 +223,21 @@ mod tests {
         let test_data = vec![
             "test module::passed ... ok",
             "test module::failed ... FAILED",
+            "test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.50s",
+            "    Doc-tests whatever",
             "test src/lib.rs - Struct::passed (line 20) ... ok",
             "test src/lib.rs - Struct::failed (line 50) ... FAILED",
+            "test result: ok. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
         ];
 
-        let cases = super::TestCases::from(&test_data);
-
-        assert_eq!(4, cases.len());
+        let suites = super::TestSuites::from(&test_data);
+        assert_eq!(2, suites.len());
+        assert_eq!("UnitTests", suites[0].id);
+        assert_eq!(2.5, suites[0].duration);
+        assert_eq!(2, suites[0].cases.len());
+        assert_eq!("Doc-tests whatever", suites[1].id);
+        assert_eq!(0.1, suites[1].duration);
+        assert_eq!(2, suites[1].cases.len());
     }
 
     #[test]

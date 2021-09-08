@@ -1,14 +1,13 @@
+use cases::{TestFailures, TestSuites};
+use junit::create_junit_file;
 use std::{
     io::{BufRead, BufReader},
     process::{Command, Stdio},
 };
 use structopt::StructOpt;
-use cases::{TestCases, TestFailures};
-use junit::create_junit_file;
 
 mod cases;
 mod junit;
-
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -24,7 +23,7 @@ fn main() {
     if options.release {
         args.push("--release");
     }
-    
+
     let process = Command::new("cargo")
         .arg("test")
         .arg("--no-fail-fast")
@@ -40,8 +39,8 @@ fn main() {
         .collect::<Vec<String>>();
     let lines_ref = lines.iter().map(|item| &**item).collect::<Vec<&str>>();
 
-    let cases = TestCases::from(&lines_ref);
+    let suites = TestSuites::from(&lines_ref);
     let failures = TestFailures::from(&lines_ref);
 
-    create_junit_file(&cases, &failures);
+    create_junit_file(&suites, &failures);
 }
