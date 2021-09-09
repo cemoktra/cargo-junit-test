@@ -1,7 +1,5 @@
 use regex::Regex;
 
-pub struct TestSuites {}
-
 #[derive(Debug, PartialEq)]
 pub enum TestOutcome {
     Unknown,
@@ -20,18 +18,10 @@ impl TestOutcome {
         }
     }
 }
-
-#[derive(Debug, Clone)]
-pub enum TestCaseType {
-    UnitTest,
-    DocTest(String),
-}
-
 #[derive(Debug)]
 pub struct TestCase {
     pub id: String,
     pub outcome: TestOutcome,
-    pub r#type: TestCaseType,
 }
 
 #[derive(Debug)]
@@ -80,53 +70,39 @@ pub struct TestSuite {
 
 pub struct TestFailures {}
 
-impl TestSuites {
-    pub fn from(test_output: &[&str]) -> Vec<TestSuite> {
-        let mut test_suites = Vec::new();
-        let mut test_cases = Vec::new();
-        let mut test_type = TestCaseType::UnitTest;
+impl TestSuite {
+    pub fn from(test_output: &[&str]) -> TestSuite {
+        let mut test_suite = TestSuite  {
+            id: "unittests".into(),
+            cases: Vec::new(),
+            duration: 0.0
+        };
         let re_cases = Regex::new(r"test (.*) ... (.*)").unwrap();
-        let re_doc_test = Regex::new(r"Doc-tests (.*)").unwrap();
         let re_duration = Regex::new(r"finished in (\d+\.\d+)").unwrap();
 
         for line in test_output {
-            if let Some(captures) = re_doc_test.captures(line) {
-                test_type = TestCaseType::DocTest(captures.get(1).unwrap().as_str().into());
-            }
-
             if let Some(captures) = re_cases.captures(line) {
                 let id = captures.get(1).unwrap().as_str();
                 if id != "result:" {
-                    test_cases.push(TestCase {
+                    test_suite.cases.push(TestCase {
                         id: id.into(),
                         outcome: TestOutcome::from(captures.get(2).unwrap().as_str()),
-                        r#type: test_type.clone(),
                     });
                 }
             }
 
             if let Some(captures) = re_duration.captures(line) {
-                if !test_cases.is_empty() {
-                    test_suites.push(TestSuite {
-                        id: match &test_type {
-                            TestCaseType::UnitTest => "UnitTests".into(),
-                            TestCaseType::DocTest(id) => format!("Doc-tests {}", id.clone()),
-                        },
-                        cases: test_cases,
-                        duration: captures
-                            .get(1)
-                            .unwrap()
-                            .as_str()
-                            .parse::<f64>()
-                            .ok()
-                            .unwrap_or(0.0),
-                    });
-                }
-                test_cases = Vec::new();
+                test_suite.duration = test_suite.duration + captures
+                    .get(1)
+                    .unwrap()
+                    .as_str()
+                    .parse::<f64>()
+                    .ok()
+                    .unwrap_or(0.0);
             }
         }
 
-        test_suites
+        test_suite
     }
 }
 
@@ -207,14 +183,10 @@ mod tests {
             "test result: ok. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
         ];
 
-        let suites = super::TestSuites::from(&test_data);
-        assert_eq!(2, suites.len());
-        assert_eq!("UnitTests", suites[0].id);
-        assert_eq!(2.5, suites[0].duration);
-        assert_eq!(2, suites[0].cases.len());
-        assert_eq!("Doc-tests whatever", suites[1].id);
-        assert_eq!(0.1, suites[1].duration);
-        assert_eq!(2, suites[1].cases.len());
+        let suite = super::TestSuite::from(&test_data);
+        assert_eq!("unittests", suite.id);
+        assert_eq!(2.6, suite.duration);
+        assert_eq!(4, suite.cases.len());
     }
 
     #[test]

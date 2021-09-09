@@ -1,4 +1,4 @@
-use cases::{TestFailures, TestSuites};
+use cases::{TestFailures, TestSuite};
 use junit::create_junit_file;
 use std::{
     io::{BufRead, BufReader},
@@ -39,8 +39,8 @@ fn main() {
         .collect::<Vec<String>>();
     let lines_ref = lines.iter().map(|item| &**item).collect::<Vec<&str>>();
 
-    let suites = TestSuites::from(&lines_ref);
+    let suite = TestSuite::from(&lines_ref);
     let failures = TestFailures::from(&lines_ref);
 
-    create_junit_file(&suites, &failures);
+    create_junit_file(&suite, &failures);
 }
