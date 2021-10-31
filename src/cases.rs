@@ -72,10 +72,10 @@ pub struct TestFailures {}
 
 impl TestSuite {
     pub fn from(test_output: &[&str]) -> TestSuite {
-        let mut test_suite = TestSuite  {
+        let mut test_suite = TestSuite {
             id: "unittests".into(),
             cases: Vec::new(),
-            duration: 0.0
+            duration: 0.0,
         };
         let re_cases = Regex::new(r"test (.*) ... (.*)").unwrap();
         let re_duration = Regex::new(r"finished in (\d+\.\d+)").unwrap();
@@ -92,7 +92,7 @@ impl TestSuite {
             }
 
             if let Some(captures) = re_duration.captures(line) {
-                test_suite.duration = test_suite.duration + captures
+                test_suite.duration += captures
                     .get(1)
                     .unwrap()
                     .as_str()
