@@ -14,6 +14,8 @@ mod junit;
 struct Options {
     #[structopt(long)]
     release: bool,
+    #[structopt(long)]
+    workspace: bool,
 }
 
 fn main() {
@@ -22,6 +24,10 @@ fn main() {
     let mut args = Vec::new();
     if options.release {
         args.push("--release");
+    }
+
+    if options.workspace {
+        args.push("--workspace");
     }
 
     let process = Command::new("cargo")
